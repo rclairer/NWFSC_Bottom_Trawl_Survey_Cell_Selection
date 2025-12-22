@@ -1,7 +1,7 @@
         
-        setwd("W:/ALL_USR/JRW/FRAM.Station.Pick/2025") # Change path as needed
+#        setwd("W:/ALL_USR/JRW/FRAM.Station.Pick/2025") # Change path as needed
         
-        Year <- 2025
+        Year <- 2024
         Number.of.Tows <- 752
         Number.of.Vessels <- 4  #  Mostly fewer vessels are dealt with by assuming 4 vessels and then deleting those that are unwanted. Except where 'Number.of.Vessels' is used below. It's all random and independent, so deleting any number of vessels is not an issue.
         Delta <- 0.1 # This delta is needed for bad luck rounding issues with multiple numbers near x.5 - change as needed.
@@ -30,7 +30,9 @@
         lib(openxlsx) #  openxlsx::read.xlsx() needs '.xlsx', it does not handle '.xls'
       
         # Change the format from '.xls" to '.xlsx' in Excel, if needed.  The 2025 file name from the GIS specialist (Curt Whitmire) was: SelectionSet2025_forWallace_v20241221.0.xls
-        Grid.Cent.ID.Dep <- openxlsx::read.xlsx(paste0('SelectionSet', Year, '_wCCA_forWallace.xlsx')) 
+        #Grid.Cent.ID.Dep <- openxlsx::read.xlsx(paste0('SelectionSet', Year, '_wCCA_forWallace.xlsx')) 
+        Grid.Cent.ID.Dep <- openxlsx::read.xlsx("SelectionSet2024_forWallace_v20240502.xlsx") 
+        
                
         Grid.Cent.ID.Dep <- Grid.Cent.ID.Dep[, c(2, 4, 3, 5)]
         names(Grid.Cent.ID.Dep) <- c("Cent.ID", "Depth.Range", "Lat.34.5", "Hectares")
@@ -61,7 +63,9 @@
                Primary.Cells <- rbind(Primary.Cells, renum(tmp[sample(1:nrow(tmp), Strata.Num[j, i]),  ]))
           }  
         }
-        Primary.Cells$Vessel <- rep(1:4, len = Number.of.Tows)
+        #Primary.Cells$Vessel <- rep(1:4, len = Number.of.Tows)
+        #IS THIS WHERE WE SHOULD ASSIGN PASS INSTEAD?
+        Primary.Cells$Pass <- rep(1:2, len = Number.of.Tows)
         
         # Check Primary Cells
         head(Primary.Cells)
