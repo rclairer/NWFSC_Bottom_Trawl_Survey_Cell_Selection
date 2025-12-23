@@ -4,6 +4,7 @@
         Year <- 2024
         Number.of.Tows <- 752
         Number.of.Vessels <- 4  #  Mostly fewer vessels are dealt with by assuming 4 vessels and then deleting those that are unwanted. Except where 'Number.of.Vessels' is used below. It's all random and independent, so deleting any number of vessels is not an issue.
+        Number.of.Passes <- 2
         Delta <- 0.1 # This delta is needed for bad luck rounding issues with multiple numbers near x.5 - change as needed.
         RNGkind("Super-Duper") # R's Super-Duper is not identical to the Super-Duper (32-bit) one in S-Plus, see the R help for 'RNGkind'.
         
@@ -67,6 +68,14 @@
         #IS THIS WHERE WE SHOULD ASSIGN PASS INSTEAD?
         Primary.Cells$Pass <- rep(1:2, len = Number.of.Tows)
         
+        #adding pass and vessel
+        
+        P1 <- Primary.Cells$Pass == 1
+        Primary.Cells$Vessel[P1] <- rep(1:2, len = sum(P1))
+        
+        P2 <- Primary.Cells$Pass == 2
+        Primary.Cells$Vessel[P2] <- rep(3:4, len = sum(P2))
+        
         # Check Primary Cells
         head(Primary.Cells)
         dim(Primary.Cells)
@@ -80,7 +89,8 @@
         Grid.Cent.ID.Dep <- match.f(Grid.Cent.ID.Dep, Grid.G4, "Cent.ID", "Cent.ID", c("SW.LON", "SW.LAT", "NW.LON", "NW.LAT", "NE.LON", "NE.LAT", "SE.LON", "SE.LAT"))
         Primary.Cells <- match.f(Primary.Cells, Grid.G4, "Cent.ID", "Cent.ID", c("SW.LON", "SW.LAT", "NW.LON", "NW.LAT", "NE.LON", "NE.LAT", "SE.LON", "SE.LAT"))
         
-        Grid.Map(Primary.Cells, Grid.G14.Cent.ID.Dep)
+  #      Grid.Map(Primary.Cells, Grid.G14.Cent.ID.Dep)
+  #function not working, will try again later (12/22/2025) - RCR
         
         # Use below for printing
         # Grid.Map(Primary.Cells, Grid.G14.Cent.ID.Dep, geo.labels = TRUE, cell.labels = TRUE, cex.label = 0.15, Size = 5, zoom = FALSE)
@@ -130,18 +140,27 @@
         Primary.Alt.Cells <- rbind(Primary.Alt.Cells, Alt.Cells.f(Lat.34.5. = "South", Depth = "100-300", Density = Den.list$S.100.300, verb = Verb)) 
         Primary.Alt.Cells <- rbind(Primary.Alt.Cells, Alt.Cells.f(Lat.34.5. = "South", Depth = "300-700", Density = Den.list$S.300.700, verb = Verb))
         
-        Primary.Alt.Cells <- match.f(Primary.Alt.Cells, Primary.Cells, "Primary", "Cent.ID", "Vessel")
-                  
-        Primary.Alt.Cells <- sort.f(Primary.Alt.Cells, c('Vessel', 'Primary', 'Distance.nm'))  # Sort needs to happen before tow-within-vessel is created below
+        #Primary.Alt.Cells <- match.f(Primary.Alt.Cells, Primary.Cells, "Primary", "Cent.ID", "Vessel")
+        #CHANGING TO PASS
+        Primary.Alt.Cells <- match.f(Primary.Alt.Cells, Primary.Cells, "Primary", "Cent.ID", "Pass")
+        
+        #Primary.Alt.Cells <- sort.f(Primary.Alt.Cells, c('Vessel', 'Primary', 'Distance.nm'))  # Sort needs to happen before tow-within-vessel is created below
+        #CHANGING TO PASS
+        Primary.Alt.Cells <- sort.f(Primary.Alt.Cells, c('Pass', 'Primary', 'Distance.nm'))  # Sort needs to happen before tow-within-vessel is created below
+        
           
         # Note that R has a base::gl() function, but only returns factors.  I wrote gl.f() in S-plus before R was created.  [gl.f() and gl() were modeled after the GLIM 'gl' function.]  
-        Primary.Alt.Cells$Tow.within.Vessel <- rep(gl.f(Number.of.Tows/4, 3), Number.of.Vessels)   
-        Primary.Alt.Cells[560:570, ]  # Check correctness of tow within vessel (3 * 188 = 564, hence the first vessel ends between 560 to 570)
+        #Primary.Alt.Cells$Tow.within.Vessel <- rep(gl.f(Number.of.Tows/4, 3), Number.of.Vessels)   
+        #Primary.Alt.Cells[560:570, ]  # Check correctness of tow within vessel (3 * 188 = 564, hence the first vessel ends between 560 to 570)
+        
+        #Tows within passes check
+        Primary.Alt.Cells$Tow.within.Pass <- rep(gl.f(Number.of.Tows/2, 3), Number.of.Passes) #how are 4 and 3 chosen here?   
+        #not sure if this is correct
         
         # Map primary and alts 
         Primary.Alt.Cells.Grid.Cent.ID.Dep.Corners <- match.f(Primary.Alt.Cells, Grid.G4, "Cent.ID", "Cent.ID", c("Depth.Range", "SW.LON", "SW.LAT", "NW.LON", "NW.LAT", "NE.LON", "NE.LAT", "SE.LON", "SE.LAT"))
-        Grid.Map(Primary.Alt.Cells.Grid.Cent.ID.Dep.Corners, Grid.G14.Cent.ID.Dep, by.order = TRUE) # Slashes for the alternatives not working correctly in the Imap package (worked in Splus under old imap functions)
-          
+#        Grid.Map(Primary.Alt.Cells.Grid.Cent.ID.Dep.Corners, Grid.G14.Cent.ID.Dep, by.order = TRUE) # Slashes for the alternatives not working correctly in the Imap package (worked in Splus under old imap functions)
+#         RCR will try this again later (12/22/2025)          
                
         # Look to see if the results are kosher
         rev(sort(Primary.Alt.Cells$Distance.nm))[1:20]
@@ -153,22 +172,29 @@
         
         browsePlot('print(histogram(~Distance.nm | factor(Order), data = Primary.Alt.Cells[Primary.Alt.Cells$Order %in% 2:3,]))')     # All distances for Order '1' are zero
 		       
-		browsePlot('
+		    browsePlot('
            par(mfrow = c(2,1))
            MASS::truehist(Primary.Alt.Cells$Distance.nm[Primary.Alt.Cells$Order %in% 2], xlim = c(0, 30), xlab = "Distance Between Primary and 1st Alternative (nm)")
            MASS::truehist(Primary.Alt.Cells$Distance.nm[Primary.Alt.Cells$Order %in% 3], xlim = c(0, 30), xlab = "Distance Between Primary and 2nd Alternative (nm)")',
         file = 'Distance Between Primary and Alternatives.png')
         
         # Output final results without cell corners (the Excel file is emailed back to Curt and also to the lead of the Survey Team, Aimee Keller)
-        (Primary.Alt.Cells <- Primary.Alt.Cells[, c('Vessel', 'Tow.within.Vessel', 'Primary', 'Cent.ID', 'Distance.nm', 'Order')])[1:10, ] # Reorder columns
-        Primary.Alt.Cells[560:570, ]  # Check correctness of tow within vessel (3 * 188 = 564)
+#        (Primary.Alt.Cells <- Primary.Alt.Cells[, c('Vessel', 'Tow.within.Vessel', 'Primary', 'Cent.ID', 'Distance.nm', 'Order')])[1:10, ] # Reorder columns
+#         with Pass instead of Vessel
+		    (Primary.Alt.Cells <- Primary.Alt.Cells[, c('Pass', 'Tow.within.Pass', 'Primary', 'Cent.ID', 'Distance.nm', 'Order')])[1:10, ] # Reorder columns
+		        Primary.Alt.Cells[560:570, ]  # Check correctness of tow within vessel (3 * 188 = 564)
         dim(Primary.Alt.Cells) # 564 * 4 = 752 * 3 = 2,256 
-        openxlsx::write.xlsx(Primary.Alt.Cells, paste0('Primary.Alt.Cells.', Year, '.xlsx'))
+        openxlsx::write.xlsx(Primary.Alt.Cells, paste0('Primary.Alt.Cells.', Year, '_testing.xlsx'))
         
         # Output results with cell corners  
-        Primary.Alt.Cells.Grid.Cent.ID.Dep.Corners <- Primary.Alt.Cells.Grid.Cent.ID.Dep.Corners[, c('Vessel', 'Tow.within.Vessel', 'Primary', 'Cent.ID', 
-                'Long', 'Lat', 'Distance.nm', 'Order', 'Depth.Range', 'SW.LON', 'SW.LAT', 'NW.LON', 'NW.LAT', 'NE.LON', 'NE.LAT', 'SE.LON', 'SE.LAT')] # Reorder columns
-        openxlsx::write.xlsx(Primary.Alt.Cells.Grid.Cent.ID.Dep.Corners, "Primary.Alt.Cells.Grid.Cent.ID.Dep.Corners.xlsx")
+        #Primary.Alt.Cells.Grid.Cent.ID.Dep.Corners <- Primary.Alt.Cells.Grid.Cent.ID.Dep.Corners[, c('Vessel', 'Tow.within.Vessel', 'Primary', 'Cent.ID', 
+        #        'Long', 'Lat', 'Distance.nm', 'Order', 'Depth.Range', 'SW.LON', 'SW.LAT', 'NW.LON', 'NW.LAT', 'NE.LON', 'NE.LAT', 'SE.LON', 'SE.LAT')] # Reorder columns
+        #with Pass instead of Vessel
+        Primary.Alt.Cells.Grid.Cent.ID.Dep.Corners <- Primary.Alt.Cells.Grid.Cent.ID.Dep.Corners[, c('Pass', 'Tow.within.Pass', 'Primary', 'Cent.ID', 
+                                                                                                     'Long', 'Lat', 'Distance.nm', 'Order', 'Depth.Range', 'SW.LON', 'SW.LAT', 'NW.LON', 'NW.LAT', 'NE.LON', 'NE.LAT', 'SE.LON', 'SE.LAT')] # Reorder columns
+        
+        
+        openxlsx::write.xlsx(Primary.Alt.Cells.Grid.Cent.ID.Dep.Corners, "Primary.Alt.Cells.Grid.Cent.ID.Dep.Corners_testing.xlsx")
         
         
         
