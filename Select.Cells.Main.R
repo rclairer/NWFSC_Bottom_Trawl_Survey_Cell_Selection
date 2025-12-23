@@ -70,11 +70,11 @@
         
         #adding pass and vessel
         
-        P1 <- Primary.Cells$Pass == 1
-        Primary.Cells$Vessel[P1] <- rep(1:2, len = sum(P1))
+        #P1 <- Primary.Cells$Pass == 1
+        #Primary.Cells$Vessel[P1] <- rep(1:2, len = sum(P1))
         
-        P2 <- Primary.Cells$Pass == 2
-        Primary.Cells$Vessel[P2] <- rep(3:4, len = sum(P2))
+        #P2 <- Primary.Cells$Pass == 2
+        #Primary.Cells$Vessel[P2] <- rep(3:4, len = sum(P2))
         
         # Check Primary Cells
         head(Primary.Cells)
